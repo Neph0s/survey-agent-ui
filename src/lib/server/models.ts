@@ -43,6 +43,7 @@ const modelsRaw = z
 				})
 				.passthrough()
 				.optional(),
+			type: z.enum(["huggingface", "langchain"]).default("huggingface")
 		})
 	)
 	.parse(JSON.parse(MODELS));
@@ -59,15 +60,15 @@ export const models = await Promise.all(
 // Models that have been deprecated
 export const oldModels = OLD_MODELS
 	? z
-			.array(
-				z.object({
-					id: z.string().optional(),
-					name: z.string().min(1),
-					displayName: z.string().min(1).optional(),
-				})
-			)
-			.parse(JSON.parse(OLD_MODELS))
-			.map((m) => ({ ...m, id: m.id || m.name, displayName: m.displayName || m.name }))
+		.array(
+			z.object({
+				id: z.string().optional(),
+				name: z.string().min(1),
+				displayName: z.string().min(1).optional(),
+			})
+		)
+		.parse(JSON.parse(OLD_MODELS))
+		.map((m) => ({ ...m, id: m.id || m.name, displayName: m.displayName || m.name }))
 	: [];
 
 export type BackendModel = (typeof models)[0];

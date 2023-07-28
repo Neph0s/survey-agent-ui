@@ -4,5 +4,11 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll": true
 	},
-	"eslint.validate": ["javascript", "svelte"]
+	"eslint.validate": [
+		"javascript",
+		"svelte"
+	],
+	"[svelte]": {
+		"editor.defaultFormatter": "svelte.svelte-vscode"
+	}
 }

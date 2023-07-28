@@ -4,7 +4,7 @@
 	import { pendingMessageIdToRetry } from "$lib/stores/pendingMessageIdToRetry";
 	import { onMount } from "svelte";
 	import { page } from "$app/stores";
-	import { textGenerationStream, type Options } from "@huggingface/inference";
+	// import { textGenerationStream, type Options } from "@huggingface/inference";
 	import { invalidate } from "$app/navigation";
 	import { base } from "$app/paths";
 	import { shareConversation } from "$lib/shareConversation";
@@ -16,6 +16,9 @@
 	import type { WebSearchMessage } from "$lib/types/WebSearch";
 	import type { Message } from "$lib/types/Message";
 	import { browser } from "$app/environment";
+	import { streamToAsyncIterable } from "$lib/utils/streamToAsyncIterable.js";
+	import { pipe, filter, map } from "iter-ops";
+	import type { TextGenerationStreamOutput } from "@huggingface/inference";
 
 	export let data;
 
@@ -43,25 +46,59 @@
 		let conversationId = $page.params.id;
 		const responseId = randomUUID();
 
-		const response = textGenerationStream(
-			{
-				model: $page.url.href,
+		// const generator = textGenerationStream(
+		// 	{
+		// 		model: $page.url.href,
+		// 		inputs,
+		// 		parameters: {
+		// 			...data.models.find((m) => m.id === data.model)?.parameters,
+		// 			return_full_text: false,
+		// 		},
+		// 	},
+		// 	{
+		// 		id: messageId,
+		// 		response_id: responseId,
+		// 		is_retry: isRetry,
+		// 		use_cache: false,
+		// 		web_search_id: webSearchId,
+		// 	} as Options
+		// );
+		const response = await fetch($page.url.href, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
 				inputs,
 				parameters: {
 					...data.models.find((m) => m.id === data.model)?.parameters,
 					return_full_text: false,
 				},
-			},
-			{
-				id: messageId,
-				response_id: responseId,
-				is_retry: isRetry,
-				use_cache: false,
-				web_search_id: webSearchId,
-			} as Options
+				options: {
+					id: messageId,
+					response_id: responseId,
+					is_retry: isRetry,
+					use_cache: false,
+					web_search_id: webSearchId,
+				},
+				stream: true,
+			}),
+		});
+
+		if (!response.body) {
+			$error = "No response body";
+			console.error("No response body");
+			return;
+		}
+
+		const generator = pipe(
+			streamToAsyncIterable(response.body),
+			map((chunk) => new TextDecoder().decode(chunk)),
+			filter((chunk) => chunk.trim().startsWith("data:")),
+			map<string, TextGenerationStreamOutput>((chunk) => JSON.parse(chunk.trim().slice(5)))
 		);
 
-		for await (const output of response) {
+		for await (const output of generator) {
 			pending = false;
 
 			if (!output) {
