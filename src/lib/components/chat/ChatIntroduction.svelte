@@ -40,7 +40,8 @@
 				</div>
 			</div>
 			<p class="text-base text-gray-600 dark:text-gray-400">
-				Making the community's best AI chat models available to everyone.
+				Welcome to {PUBLIC_APP_NAME}! You can select a model from the dropdown aside to start
+				chatting.
 			</p>
 		</div>
 	</div>

@@ -72,6 +72,7 @@ export const load: LayoutServerLoad = async ({ locals, depends, url }) => {
 			description: model.description,
 			promptExamples: model.promptExamples,
 			parameters: model.parameters,
+			type: model.type,
 		})),
 		oldModels,
 		user: locals.user && {

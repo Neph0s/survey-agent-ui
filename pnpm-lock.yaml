@@ -55,6 +55,9 @@ dependencies:
   tailwindcss:
     specifier: ^3.3.1
     version: registry.npmmirror.com/tailwindcss@3.3.1(postcss@8.4.21)
+  ts-pattern:
+    specifier: ^5.0.4
+    version: 5.0.4
   zod:
     specifier: ^3.21.4
     version: registry.npmmirror.com/zod@3.21.4
@@ -959,6 +962,10 @@ packages:
 
   /tr46@0.0.3:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
+    dev: false
+
+  /ts-pattern@5.0.4:
+    resolution: {integrity: sha512-D5iVliqugv2C9541W2CNXFYNEZxr4TiHuLPuf49tKEdQFp/8y8fR0v1RExUvXkiWozKCwE7zv07C6EKxf0lKuQ==}
     dev: false
 
   /uuid@9.0.0:
