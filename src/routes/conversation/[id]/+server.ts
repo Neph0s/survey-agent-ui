@@ -1,11 +1,10 @@
 import { RATE_LIMIT } from "$env/static/private";
-import { buildPrompt } from "$lib/buildPrompt";
 import { PUBLIC_SEP_TOKEN } from "$lib/constants/publicSepToken";
 import { abortedGenerations } from "$lib/server/abortedGenerations";
 import { authCondition } from "$lib/server/auth";
 import { collections } from "$lib/server/database";
-import { modelEndpoint } from "$lib/server/modelEndpoint";
 import { models } from "$lib/server/models";
+import { queryModel } from "$lib/server/queryModel";
 import { ERROR_MESSAGES } from "$lib/stores/errors.js";
 import type { Message } from "$lib/types/Message";
 import { concatUint8Arrays } from "$lib/utils/concatUint8Arrays";
@@ -82,46 +81,21 @@ export async function POST({ request, fetch, locals, params }) {
 		];
 	})() satisfies Message[];
 
-	const prompt = await buildPrompt(messages, model, web_search_id);
-	const randomEndpoint = modelEndpoint(model);
-
 	const abortController = new AbortController();
 
-	const resp = await fetch(randomEndpoint.url, {
-		headers: {
-			"Content-Type": request.headers.get("Content-Type") ?? "application/json",
-			Authorization: randomEndpoint.authorization,
-		},
-		method: "POST",
-		body: JSON.stringify({
-			...json,
-			inputs: prompt,
-		}),
-		signal: abortController.signal,
-	});
+	const [generator, status, statusText] = await queryModel(model, messages, fetch, abortController.signal, web_search_id);
 
-	if (!resp.body) {
-		throw new Error("Response body is empty");
-	}
+	async function saveMessage(generated_text: string) {
+		if (model?.type === "huggingface") {
+			generated_text = trimSuffix(
+				trimPrefix(generated_text, "<|startoftext|>"),
+				PUBLIC_SEP_TOKEN
+			).trimEnd();
 
-	const [stream1, stream2] = resp.body.tee();
-
-	async function saveMessage() {
-		let generated_text = await parseGeneratedText(stream2, convId, date, abortController);
-
-		// We could also check if PUBLIC_ASSISTANT_MESSAGE_TOKEN is present and use it to slice the text
-		if (generated_text.startsWith(prompt)) {
-			generated_text = generated_text.slice(prompt.length);
-		}
-
-		generated_text = trimSuffix(
-			trimPrefix(generated_text, "<|startoftext|>"),
-			PUBLIC_SEP_TOKEN
-		).trimEnd();
-
-		for (const stop of [...(model?.parameters?.stop ?? []), "<|endoftext|>"]) {
-			if (generated_text.endsWith(stop)) {
-				generated_text = generated_text.slice(0, -stop.length).trimEnd();
+			for (const stop of [...(model?.parameters?.stop ?? []), "<|endoftext|>"]) {
+				if (generated_text.endsWith(stop)) {
+					generated_text = generated_text.slice(0, -stop.length).trimEnd();
+				}
 			}
 		}
 
@@ -150,12 +124,35 @@ export async function POST({ request, fetch, locals, params }) {
 		);
 	}
 
-	saveMessage().catch(console.error);
+	const stream = new ReadableStream({
+		async start(controller) {
+			const textChunks: string[] = []
+			for await (const response of generator) {
+				textChunks.push(response.token.text)
+				const abortDate = abortedGenerations.get(convId.toString());
+				if (abortDate && abortDate > date) {
+					abortController.abort("Cancelled by user");
+					await saveMessage(textChunks.join(""))
+					controller.enqueue(new TextEncoder().encode("error: Cancelled by user\n"));
+					break;
+				}
+				if (response.generated_text) {
+					await saveMessage(response.generated_text);
+				}
+				// Convert the response to Uint8Array
+				const output = "data:" + JSON.stringify(response) + "\n";
+				const data = new TextEncoder().encode(output);
+				// Push the data into the stream
+				controller.enqueue(data);
+			}
+			controller.close();
+		},
+	});
+
 	// Todo: maybe we should wait for the message to be saved before ending the response - in case of errors
-	return new Response(stream1, {
-		headers: Object.fromEntries(resp.headers.entries()),
-		status: resp.status,
-		statusText: resp.statusText,
+	return new Response(stream, {
+		status,
+		statusText
 	});
 }
 
@@ -176,6 +173,7 @@ export async function DELETE({ locals, params }) {
 	return new Response();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function parseGeneratedText(
 	stream: ReadableStream,
 	conversationId: ObjectId,

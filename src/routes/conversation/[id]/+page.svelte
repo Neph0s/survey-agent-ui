@@ -17,7 +17,7 @@
 	import type { Message } from "$lib/types/Message";
 	import { browser } from "$app/environment";
 	import { streamToAsyncIterable } from "$lib/utils/streamToAsyncIterable.js";
-	import { pipe, filter, map } from "iter-ops";
+	import { pipe, filter, map, flatMap } from "iter-ops";
 	import type { TextGenerationStreamOutput } from "@huggingface/inference";
 
 	export let data;
@@ -94,11 +94,19 @@
 		const generator = pipe(
 			streamToAsyncIterable(response.body),
 			map((chunk) => new TextDecoder().decode(chunk)),
-			filter((chunk) => chunk.trim().startsWith("data:")),
-			map<string, TextGenerationStreamOutput>((chunk) => JSON.parse(chunk.trim().slice(5)))
+			flatMap((chunk) => chunk.split("\n")),
+			map((chunk) => chunk.trim()),
+			filter((chunk) => chunk.startsWith("data:") || chunk.startsWith("error:"))
 		);
 
-		for await (const output of generator) {
+		for await (const chunk of generator) {
+			if (chunk.startsWith("error:")) {
+				console.error(chunk.slice(6));
+				$error = chunk.slice(6);
+				break;
+			}
+
+			const output = JSON.parse(chunk.trim().slice(5)) as TextGenerationStreamOutput;
 			pending = false;
 
 			if (!output) {

@@ -1,4 +1,4 @@
-import type { BackendModel } from "./server/models";
+import type { BackendModelHuggingFace } from "./server/models";
 import type { Message } from "./types/Message";
 import { collections } from "$lib/server/database";
 import { ObjectId } from "mongodb";
@@ -10,7 +10,7 @@ import { ObjectId } from "mongodb";
 
 export async function buildPrompt(
 	messages: Pick<Message, "from" | "content">[],
-	model: BackendModel,
+	model: BackendModelHuggingFace,
 	webSearchId?: string
 ): Promise<string> {
 	const prompt =

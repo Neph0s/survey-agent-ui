@@ -1,12 +1,12 @@
-import { buildPrompt } from "$lib/buildPrompt";
 import { authCondition } from "$lib/server/auth";
 import { collections } from "$lib/server/database";
-import { generateFromDefaultEndpoint } from "$lib/server/generateFromDefaultEndpoint";
 import { defaultModel } from "$lib/server/models";
+import { queryModelNoStreaming } from "$lib/server/queryModel.js";
+import type { Message } from "$lib/types/Message.js";
 import { error } from "@sveltejs/kit";
 import { ObjectId } from "mongodb";
 
-export async function POST({ params, locals }) {
+export async function POST({ params, locals, fetch }) {
 	const convId = new ObjectId(params.id);
 
 	const conversation = await collections.conversations.findOne({
@@ -24,8 +24,8 @@ export async function POST({ params, locals }) {
 		`Please summarize the following message as a single sentence of less than 5 words:\n` +
 		firstMessage?.content;
 
-	const prompt = await buildPrompt([{ from: "user", content: userPrompt }], defaultModel);
-	const generated_text = await generateFromDefaultEndpoint(prompt);
+	const [generated_text, status, statusText] = await queryModelNoStreaming(defaultModel, [{ from: "user", content: userPrompt } as Message], fetch);
+
 
 	if (generated_text) {
 		await collections.conversations.updateOne(
@@ -43,10 +43,14 @@ export async function POST({ params, locals }) {
 		JSON.stringify(
 			generated_text
 				? {
-						title: generated_text,
-				  }
+					title: generated_text,
+				}
 				: {}
 		),
-		{ headers: { "Content-Type": "application/json" } }
+		{
+			headers: { "Content-Type": "application/json" },
+			status: status,
+			statusText: statusText
+		}
 	);
 }
