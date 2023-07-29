@@ -81,10 +81,11 @@ export const oldModels = OLD_MODELS
 				id: z.string().optional(),
 				name: z.string().min(1),
 				displayName: z.string().min(1).optional(),
+				type: z.enum(["huggingface", "langchain"]).default("huggingface"),
 			})
 		)
 		.parse(JSON.parse(OLD_MODELS))
-		.map((m) => ({ ...m, id: m.id || m.name, displayName: m.displayName || m.name }))
+		.map((m) => ({ ...m, id: m.id || m.name, displayName: m.displayName || m.name, type: m.type }))
 	: [];
 
 export type BackendModel = (typeof models)[0];
