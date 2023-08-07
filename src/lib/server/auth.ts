@@ -27,14 +27,17 @@ export function refreshSessionCookie(cookies: Cookies, sessionId: string) {
 	cookies.set(COOKIE_NAME, sessionId, {
 		path: "/",
 		// So that it works inside the space's iframe
-		sameSite: dev ? "lax" : "none",
-		secure: !dev,
+		// sameSite: dev ? "lax" : "none",
+		// secure: !dev,
+		sameSite: "lax",
+		secure: false,
 		httpOnly: true,
 		expires: addYears(new Date(), 1),
 	});
 }
 
 export const authCondition = (locals: App.Locals) => {
+	console.log(locals)
 	return locals.user
 		? { userId: locals.user._id }
 		: { sessionId: locals.sessionId, userId: { $exists: false } };
