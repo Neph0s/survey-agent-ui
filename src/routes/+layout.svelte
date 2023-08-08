@@ -4,7 +4,7 @@
 	import { page } from "$app/stores";
 	import "../styles/main.css";
 	import { base } from "$app/paths";
-	import { PUBLIC_ORIGIN, PUBLIC_APP_DISCLAIMER } from "$env/static/public";
+	import { PUBLIC_ORIGIN } from "$env/static/public";
 
 	import { shareConversation } from "$lib/shareConversation";
 	import { UrlDependency } from "$lib/types/UrlDependency";
@@ -21,6 +21,7 @@
 
 	let isNavOpen = false;
 	let isSettingsOpen = false;
+	let isLoginOpen = false;
 	let errorToastTimeout: ReturnType<typeof setTimeout>;
 	let currentError: string | null;
 
@@ -92,13 +93,6 @@
 	});
 
 	$: if ($error) onError();
-
-	const requiresLogin =
-		!$page.error &&
-		!$page.route.id?.startsWith("/r/") &&
-		(data.requiresLogin
-			? !data.user
-			: !data.settings.ethicsModalAcceptedAt && !!PUBLIC_APP_DISCLAIMER);
 </script>
 
 <svelte:head>
@@ -158,6 +152,7 @@
 			user={data.user}
 			on:shareConversation={(ev) => shareConversation(ev.detail.id, ev.detail.title)}
 			on:deleteConversation={(ev) => deleteConversation(ev.detail)}
+			on:clickLogin={() => (isLoginOpen = true)}
 			on:clickSettings={() => (isSettingsOpen = true)}
 			on:editConversationTitle={(ev) => editConversationTitle(ev.detail.id, ev.detail.title)}
 		/>
@@ -168,6 +163,7 @@
 			user={data.user}
 			on:shareConversation={(ev) => shareConversation(ev.detail.id, ev.detail.title)}
 			on:deleteConversation={(ev) => deleteConversation(ev.detail)}
+			on:clickLogin={() => (isLoginOpen = true)}
 			on:clickSettings={() => (isSettingsOpen = true)}
 			on:editConversationTitle={(ev) => editConversationTitle(ev.detail.id, ev.detail.title)}
 		/>
@@ -178,8 +174,8 @@
 	{#if isSettingsOpen}
 		<SettingsModal on:close={() => (isSettingsOpen = false)} settings={data.settings} />
 	{/if}
-	{#if requiresLogin}
-		<LoginModal settings={data.settings} />
+	{#if isLoginOpen}
+		<LoginModal on:close={() => (isLoginOpen = false)} />
 	{/if}
 	<slot />
 </div>

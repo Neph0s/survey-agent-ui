@@ -25,9 +25,12 @@ dependencies:
   jsdom:
     specifier: ^22.0.0
     version: registry.npmmirror.com/jsdom@22.0.0
+  jsonwebtoken:
+    specifier: ^9.0.1
+    version: 9.0.1
   langchain:
-    specifier: ^0.0.118
-    version: 0.0.118(@huggingface/inference@2.2.0)(mongodb@5.3.0)
+    specifier: ^0.0.124
+    version: 0.0.124(@huggingface/inference@2.2.0)(mongodb@5.3.0)
   marked:
     specifier: ^4.3.0
     version: registry.npmmirror.com/marked@4.3.0
@@ -81,6 +84,9 @@ devDependencies:
   '@types/jsdom':
     specifier: ^21.1.1
     version: registry.npmmirror.com/@types/jsdom@21.1.1
+  '@types/jsonwebtoken':
+    specifier: ^9.0.2
+    version: 9.0.2
   '@types/marked':
     specifier: ^4.0.8
     version: registry.npmmirror.com/@types/marked@4.0.8
@@ -349,6 +355,12 @@ packages:
     dev: true
     optional: true
 
+  /@types/jsonwebtoken@9.0.2:
+    resolution: {integrity: sha512-drE6uz7QBKq1fYqqoFKTDRdFCPHd5TCub75BM+D+cMx7NU9hUz7SESLfC2fSCXVFMO5Yj8sOWHuGqPgjc+fz0Q==}
+    dependencies:
+      '@types/node': 20.4.1
+    dev: true
+
   /@types/node-fetch@2.6.4:
     resolution: {integrity: sha512-1ZX9fcN4Rvkvgv4E6PAY5WXUFWFcRWxZa3EW83UjycOB9ljJCedb2CupIP4RZMEwF/M3eTcCihbBRgwtGbg5Rg==}
     dependencies:
@@ -362,7 +374,6 @@ packages:
 
   /@types/node@20.4.1:
     resolution: {integrity: sha512-JIzsAvJeA/5iY6Y/OxZbv1lUcc8dNSE77lb2gnBH+/PJ3lFR1Ccvgwl5JWnHAkNHcRsT0TbpVOsiMKZ1F/yyJg==}
-    dev: false
 
   /@types/retry@0.12.0:
     resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
@@ -428,6 +439,10 @@ packages:
     resolution: {integrity: sha512-nbE1WxOTTrUWIfsfZ4aHGYu5DOuNkbxGokjV6Z2kxfJK3uaAb8zNK1muzOeipoLHZjInT4Br88BHpzevc681xA==}
     dev: false
 
+  /buffer-equal-constant-time@1.0.1:
+    resolution: {integrity: sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==}
+    dev: false
+
   /camelcase@6.3.0:
     resolution: {integrity: sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==}
     engines: {node: '>=10'}
@@ -485,6 +500,12 @@ packages:
     dependencies:
       base-64: 0.1.0
       md5: 2.3.0
+    dev: false
+
+  /ecdsa-sig-formatter@1.0.11:
+    resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
+    dependencies:
+      safe-buffer: 5.2.1
     dev: false
 
   /event-target-shim@5.0.1:
@@ -589,8 +610,33 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: false
 
-  /langchain@0.0.118(@huggingface/inference@2.2.0)(mongodb@5.3.0):
-    resolution: {integrity: sha512-MzadedGsgvF5Rf+S94o+mY2Gkf5QEQFjLrCsaKcKeOREMJZ2GTszPlkDpwLWwe5MVugY1DhtC2c4gI13R+WtTw==}
+  /jsonwebtoken@9.0.1:
+    resolution: {integrity: sha512-K8wx7eJ5TPvEjuiVSkv167EVboBDv9PZdDoF7BgeQnBLVvZWW9clr2PsQHVJDTKaEIH5JBIwHujGcHp7GgI2eg==}
+    engines: {node: '>=12', npm: '>=6'}
+    dependencies:
+      jws: 3.2.2
+      lodash: 4.17.21
+      ms: 2.1.2
+      semver: 7.5.4
+    dev: false
+
+  /jwa@1.4.1:
+    resolution: {integrity: sha512-qiLX/xhEEFKUAJ6FiBMbes3w9ATzyk5W7Hvzpa/SLYdxNtng+gcurvrI7TbACjIXlsJyr05/S1oUhZrc63evQA==}
+    dependencies:
+      buffer-equal-constant-time: 1.0.1
+      ecdsa-sig-formatter: 1.0.11
+      safe-buffer: 5.2.1
+    dev: false
+
+  /jws@3.2.2:
+    resolution: {integrity: sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==}
+    dependencies:
+      jwa: 1.4.1
+      safe-buffer: 5.2.1
+    dev: false
+
+  /langchain@0.0.124(@huggingface/inference@2.2.0)(mongodb@5.3.0):
+    resolution: {integrity: sha512-TabvP1G47qe8UJKhgx+r2ezNwB9w6t247gl5EYli5rJ46cCQncAA9Ubtk5KGT9iu1wDOcT2Zx7r6Mm5PM/jeQA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@aws-sdk/client-dynamodb': ^3.310.0
@@ -599,6 +645,7 @@ packages:
       '@aws-sdk/client-s3': ^3.310.0
       '@aws-sdk/client-sagemaker-runtime': ^3.310.0
       '@aws-sdk/client-sfn': ^3.310.0
+      '@azure/storage-blob': ^12.15.0
       '@clickhouse/client': ^0.0.14
       '@elastic/elasticsearch': ^8.4.0
       '@getmetal/metal-sdk': '*'
@@ -619,6 +666,7 @@ packages:
       '@tensorflow/tfjs-core': '*'
       '@tigrisdata/vector': ^1.1.0
       '@upstash/redis': ^1.20.6
+      '@xata.io/client': ^0.25.1
       '@zilliz/milvus2-sdk-node': '>=2.2.7'
       apify-client: ^2.7.1
       axios: '*'
@@ -666,6 +714,8 @@ packages:
         optional: true
       '@aws-sdk/client-sfn':
         optional: true
+      '@azure/storage-blob':
+        optional: true
       '@clickhouse/client':
         optional: true
       '@elastic/elasticsearch':
@@ -705,6 +755,8 @@ packages:
       '@tigrisdata/vector':
         optional: true
       '@upstash/redis':
+        optional: true
+      '@xata.io/client':
         optional: true
       '@zilliz/milvus2-sdk-node':
         optional: true
@@ -786,7 +838,7 @@ packages:
       js-tiktoken: 1.0.7
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
-      langsmith: 0.0.15
+      langsmith: 0.0.19
       ml-distance: 4.0.1
       mongodb: registry.npmmirror.com/mongodb@5.3.0
       object-hash: 3.0.0
@@ -804,8 +856,8 @@ packages:
       - supports-color
     dev: false
 
-  /langsmith@0.0.15:
-    resolution: {integrity: sha512-SVLJEm94aK9mmqE3z2wlpzLjPNodnPJHp1MZdmXG2ysUWSFsRVuGkd6A/GTzlEZ6OofyJSOg6tcNFJSFOi13QQ==}
+  /langsmith@0.0.19:
+    resolution: {integrity: sha512-eqql2sv4LgLNuC0yFEeJ1Eh81KlvYeTwl3xuqUgzfox2/gCdiAi3BC0Lv/9+6hoV2yx/0krs2O4zRdnJYm6eow==}
     hasBin: true
     dependencies:
       '@types/uuid': 9.0.2
@@ -813,6 +865,17 @@ packages:
       p-queue: 6.6.2
       p-retry: 4.6.2
       uuid: 9.0.0
+    dev: false
+
+  /lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+    dev: false
+
+  /lru-cache@6.0.0:
+    resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
+    engines: {node: '>=10'}
+    dependencies:
+      yallist: 4.0.0
     dev: false
 
   /lzo@0.4.11:
@@ -951,6 +1014,10 @@ packages:
     engines: {node: '>= 4'}
     dev: false
 
+  /safe-buffer@5.2.1:
+    resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
+    dev: false
+
   /saslprep@1.0.3:
     resolution: {integrity: sha512-/MY/PEMbk2SuY5sScONwhUDsV2p77Znkb/q3nSVstq/yQzYJOH/Azh29p9oJLsl3LnQwSvZDKagDGBsBwSooag==}
     engines: {node: '>=6'}
@@ -959,6 +1026,14 @@ packages:
       sparse-bitfield: registry.npmmirror.com/sparse-bitfield@3.0.3
     dev: false
     optional: true
+
+  /semver@7.5.4:
+    resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      lru-cache: 6.0.0
+    dev: false
 
   /tr46@0.0.3:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
@@ -987,6 +1062,10 @@ packages:
     dependencies:
       tr46: 0.0.3
       webidl-conversions: 3.0.1
+    dev: false
+
+  /yallist@4.0.0:
+    resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
     dev: false
 
   /yaml@2.3.1:

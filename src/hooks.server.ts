@@ -1,5 +1,5 @@
-import { COOKIE_NAME } from "$env/static/private";
-import type { Handle } from "@sveltejs/kit";
+import { COOKIE_NAME, JWT_SECRET } from "$env/static/private";
+import { error, type Handle } from "@sveltejs/kit";
 import {
 	PUBLIC_GOOGLE_ANALYTICS_ID,
 	PUBLIC_DEPRECATED_GOOGLE_ANALYTICS_ID,
@@ -10,16 +10,82 @@ import { collections } from "$lib/server/database";
 import { base } from "$app/paths";
 import { refreshSessionCookie, requiresUser } from "$lib/server/auth";
 import { ERROR_MESSAGES } from "$lib/stores/errors";
+import * as jwt from "jsonwebtoken";
+import { z } from "zod";
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(COOKIE_NAME);
 
 	event.locals.sessionId = token || crypto.randomUUID();
 
-	const user = await collections.users.findOne({ sessionId: event.locals.sessionId });
+	const accessToken = event.cookies.get("access_token");
+	if (accessToken) {
+		try {
+			const decoded = z.object({
+				username: z.string(),
+				refresh: z.boolean(),
+			}).parse(jwt.verify(accessToken, JWT_SECRET));
+			const user = await collections.users.findOne({
+				username: decoded.username,
+			});
+			if (user) {
+				event.locals.user = user;
+			}
+		} catch (e) {
+			// Refresh token
+			const refreshToken = event.cookies.get("refresh_token");
+			if (refreshToken) {
+				try {
+					const decoded = z.object({
+						username: z.string(),
+						refresh: z.boolean(),
+					}).parse(jwt.verify(refreshToken, JWT_SECRET));
+					const user = await collections.users.findOne({
+						username: decoded.username,
+					});
+					if (user) {
+						event.locals.user = user;
+						const newAccessToken = jwt.sign(
+							{
+								username: user.username,
+								refresh: false,
+							},
+							JWT_SECRET,
+							{
+								expiresIn: "1d",
+							}
+						);
+						const newRefreshToken = jwt.sign(
+							{
+								username: user.username,
+								refresh: true,
+							},
+							JWT_SECRET,
+							{
+								expiresIn: "7d",
+							}
+						);
+						event.cookies.set('access_token', newAccessToken, {
+							path: '/',
+							maxAge: 60 * 60 * 24,
+						});
 
-	if (user) {
-		event.locals.user = user;
+						event.cookies.set('refresh_token', newRefreshToken, {
+							path: '/',
+							maxAge: 60 * 60 * 24 * 7,
+						});
+					}
+				} catch (er) {
+					event.cookies.delete("access_token", {
+						path: "/",
+					});
+					event.cookies.delete("refresh_token", {
+						path: "/",
+					});
+					throw error(401, "Invalid token");
+				}
+			}
+		}
 	}
 
 	function errorResponse(status: number, message: string) {
@@ -64,7 +130,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		!event.url.pathname.startsWith(`${base}/admin`) &&
 		!["GET", "OPTIONS", "HEAD"].includes(event.request.method)
 	) {
-		if (!user && requiresUser) {
+		if (!event.locals.user && requiresUser) {
 			return errorResponse(401, ERROR_MESSAGES.authOnly);
 		}
 

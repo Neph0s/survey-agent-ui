@@ -8,8 +8,6 @@ import { OPENAI_API_KEY } from "$env/static/private";
 export async function POST({ request }) {
     const json = await request.json();
 
-    console.log(json)
-
     const { stream, parameters, messages } = z
         .object({
             stream: z.boolean().default(true),
@@ -24,9 +22,6 @@ export async function POST({ request }) {
             }))
         })
         .parse(json);
-
-    // const testRes = await fetch('https://google.com')
-    // console.log(testRes)
 
     const model = new ChatOpenAI({
         ...parameters,
@@ -47,7 +42,6 @@ export async function POST({ request }) {
 
     const retStream = new ReadableStream({
         async start(controller) {
-            console.log('start')
             const response = await model.call(chatMessages, {
                 callbacks: [{
                     handleLLMNewToken(token: string) {
@@ -61,7 +55,6 @@ export async function POST({ request }) {
                             generated_text: null,
                             details: null,
                         };
-                        console.log(textGenerationStreamOutput)
                         controller.enqueue(new TextEncoder().encode('data:' + JSON.stringify(textGenerationStreamOutput) + '\n'));
                     },
                     handleLLMError(err, runId, parentRunId, tags) {
