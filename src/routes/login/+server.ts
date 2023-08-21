@@ -7,7 +7,7 @@ import { error, redirect } from "@sveltejs/kit";
 import { JWT_SECRET } from "$env/static/private";
 import { base } from "$app/paths";
 
-export const POST = async ({ request, cookies }) => {
+export const POST = async ({ request, cookies, locals }) => {
 	const { username, passwordDigest, salt } = z
 		.object({
 			username: z.string().min(1).max(100),
@@ -39,6 +39,15 @@ export const POST = async ({ request, cookies }) => {
 	if (user.passwordDigest !== passwordDigest) {
 		throw error(401, "Incorrect password");
 	}
+
+	await collections.conversations.updateMany(
+		{ sessionId: locals.sessionId, userId: { $exists: false } },
+		{
+			$set: {
+				userId: user._id,
+			},
+		}
+	);
 
 	const accessToken = jwt.sign(
 		{
