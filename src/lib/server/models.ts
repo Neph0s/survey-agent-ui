@@ -31,27 +31,30 @@ const modelRawMixin = z.object({
 				weight: z.number().int().positive().default(1),
 			})
 		)
-		.optional()
-})
+		.optional(),
+});
 
 const modelRawHuggingFaceSpecific = z.object({
 	type: z.literal("huggingface").default("huggingface"),
-	parameters: z.object({
-		temperature: z.number().min(0).max(1),
-		truncate: z.number().int().positive(),
-		max_new_tokens: z.number().int().positive(),
-		stop: z.array(z.string()).optional(),
-	}).passthrough().optional()
-})
+	parameters: z
+		.object({
+			temperature: z.number().min(0).max(1),
+			truncate: z.number().int().positive(),
+			max_new_tokens: z.number().int().positive(),
+			stop: z.array(z.string()).optional(),
+		})
+		.passthrough()
+		.optional(),
+});
 
 const modelRawLangchainSpecific = z.object({
 	type: z.literal("langchain"),
 	parameters: z.object({
 		modelName: z.string().optional(),
 		temperature: z.number().min(0).max(1).optional(),
-		maxTokens: z.number().int().positive().optional()
-	})
-})
+		maxTokens: z.number().int().positive().optional(),
+	}),
+});
 
 const modelsRaw = z
 	.array(
@@ -61,8 +64,6 @@ const modelsRaw = z
 		])
 	)
 	.parse(JSON.parse(MODELS));
-
-
 
 export const models = await Promise.all(
 	modelsRaw.map(async (m) => ({
@@ -76,19 +77,24 @@ export const models = await Promise.all(
 // Models that have been deprecated
 export const oldModels = OLD_MODELS
 	? z
-		.array(
-			z.object({
-				id: z.string().optional(),
-				name: z.string().min(1),
-				displayName: z.string().min(1).optional(),
-				type: z.enum(["huggingface", "langchain"]).default("huggingface"),
-			})
-		)
-		.parse(JSON.parse(OLD_MODELS))
-		.map((m) => ({ ...m, id: m.id || m.name, displayName: m.displayName || m.name, type: m.type }))
+			.array(
+				z.object({
+					id: z.string().optional(),
+					name: z.string().min(1),
+					displayName: z.string().min(1).optional(),
+					type: z.enum(["huggingface", "langchain"]).default("huggingface"),
+				})
+			)
+			.parse(JSON.parse(OLD_MODELS))
+			.map((m) => ({
+				...m,
+				id: m.id || m.name,
+				displayName: m.displayName || m.name,
+				type: m.type,
+			}))
 	: [];
 
-export type BackendModel = (typeof models)[0];
+export type BackendModel = typeof models[0];
 
 export type BackendModelHuggingFace = Extract<BackendModel, { type: "huggingface" }>;
 

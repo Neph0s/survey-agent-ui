@@ -24,8 +24,11 @@ export async function POST({ params, locals, fetch }) {
 		`Please summarize the following message as a single sentence of less than 5 words:\n` +
 		firstMessage?.content;
 
-	const [generated_text, status, statusText] = await queryModelNoStreaming(defaultModel, [{ from: "user", content: userPrompt } as Message], fetch);
-
+	const [generated_text, status, statusText] = await queryModelNoStreaming(
+		defaultModel,
+		[{ from: "user", content: userPrompt } as Message],
+		fetch
+	);
 
 	if (generated_text) {
 		await collections.conversations.updateOne(
@@ -43,14 +46,14 @@ export async function POST({ params, locals, fetch }) {
 		JSON.stringify(
 			generated_text
 				? {
-					title: generated_text,
-				}
+						title: generated_text,
+				  }
 				: {}
 		),
 		{
 			headers: { "Content-Type": "application/json" },
 			status: status,
-			statusText: statusText
+			statusText: statusText,
 		}
 	);
 }

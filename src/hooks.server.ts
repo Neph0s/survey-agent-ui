@@ -21,10 +21,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const accessToken = event.cookies.get("access_token");
 	if (accessToken) {
 		try {
-			const decoded = z.object({
-				username: z.string(),
-				refresh: z.boolean(),
-			}).parse(jwt.verify(accessToken, JWT_SECRET));
+			const decoded = z
+				.object({
+					username: z.string(),
+					refresh: z.boolean(),
+				})
+				.parse(jwt.verify(accessToken, JWT_SECRET));
 			const user = await collections.users.findOne({
 				username: decoded.username,
 			});
@@ -36,10 +38,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 			const refreshToken = event.cookies.get("refresh_token");
 			if (refreshToken) {
 				try {
-					const decoded = z.object({
-						username: z.string(),
-						refresh: z.boolean(),
-					}).parse(jwt.verify(refreshToken, JWT_SECRET));
+					const decoded = z
+						.object({
+							username: z.string(),
+							refresh: z.boolean(),
+						})
+						.parse(jwt.verify(refreshToken, JWT_SECRET));
 					const user = await collections.users.findOne({
 						username: decoded.username,
 					});
@@ -65,13 +69,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 								expiresIn: "7d",
 							}
 						);
-						event.cookies.set('access_token', newAccessToken, {
-							path: '/',
+						event.cookies.set("access_token", newAccessToken, {
+							path: "/",
 							maxAge: 60 * 60 * 24,
 						});
 
-						event.cookies.set('refresh_token', newRefreshToken, {
-							path: '/',
+						event.cookies.set("refresh_token", newRefreshToken, {
+							path: "/",
 							maxAge: 60 * 60 * 24 * 7,
 						});
 					}

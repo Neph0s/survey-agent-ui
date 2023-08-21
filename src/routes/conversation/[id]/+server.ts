@@ -83,7 +83,13 @@ export async function POST({ request, fetch, locals, params }) {
 
 	const abortController = new AbortController();
 
-	const [generator, status, statusText] = await queryModel(model, messages, fetch, abortController.signal, web_search_id);
+	const [generator, status, statusText] = await queryModel(
+		model,
+		messages,
+		fetch,
+		abortController.signal,
+		web_search_id
+	);
 
 	async function saveMessage(generated_text: string) {
 		if (model?.type === "huggingface") {
@@ -126,13 +132,13 @@ export async function POST({ request, fetch, locals, params }) {
 
 	const stream = new ReadableStream({
 		async start(controller) {
-			const textChunks: string[] = []
+			const textChunks: string[] = [];
 			for await (const response of generator) {
-				textChunks.push(response.token.text)
+				textChunks.push(response.token.text);
 				const abortDate = abortedGenerations.get(convId.toString());
 				if (abortDate && abortDate > date) {
 					abortController.abort("Cancelled by user");
-					await saveMessage(textChunks.join(""))
+					await saveMessage(textChunks.join(""));
 					controller.enqueue(new TextEncoder().encode("error: Cancelled by user\n"));
 					break;
 				}
@@ -152,7 +158,7 @@ export async function POST({ request, fetch, locals, params }) {
 	// Todo: maybe we should wait for the message to be saved before ending the response - in case of errors
 	return new Response(stream, {
 		status,
-		statusText
+		statusText,
 	});
 }
 
