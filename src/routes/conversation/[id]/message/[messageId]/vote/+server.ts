@@ -22,10 +22,10 @@ export async function POST({ params, request, locals }) {
 		{
 			...(score !== 0
 				? {
-						$set: {
-							"messages.$.score": score,
-						},
-				  }
+					$set: {
+						"messages.$.score": score,
+					},
+				}
 				: { $unset: { "messages.$.score": "" } }),
 		}
 	);

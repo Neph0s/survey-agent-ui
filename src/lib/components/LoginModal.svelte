@@ -46,6 +46,8 @@
 			alert("Please fill in your username and password.");
 		}
 	};
+
+	let showPassword = false;
 </script>
 
 <Modal width="max-w-lg">
@@ -102,12 +104,26 @@
 								<input
 									class="w-full resize-none scroll-p-3 overflow-x-hidden overflow-y-scroll border-0 bg-transparent p-3 outline-none focus:ring-0 focus-visible:ring-0"
 									placeholder="Your Password"
-									type="password"
+									type={showPassword ? "text" : "password"}
 									name="password"
 								/>
 							</div>
 						</div>
 					</div>
+				</div>
+				<!-- Show Password -->
+				<div class="flex w-full flex-col items-start gap-1">
+					<label class="flex cursor-pointer select-none items-center">
+						<input
+							type="checkbox"
+							class="rounded border-gray-300 text-primary-500 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+							checked={showPassword}
+							on:change={() => (showPassword = !showPassword)}
+						/>
+						<span class="ml-2 text-sm text-gray-500">
+							{showPassword ? "Hide" : "Show"} Password
+						</span>
+					</label>
 				</div>
 			</div>
 			<p class="self-start text-sm text-gray-500">
