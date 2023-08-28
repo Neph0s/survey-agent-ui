@@ -111,7 +111,7 @@
 		<img
 			alt=""
 			src="https://huggingface.co/avatars/2edb18bd0206c16b433841a47f53fa8e.svg"
-			class="mt-5 h-3 w-3 flex-none select-none rounded-full shadow-lg"
+			class="h-8 w-8 flex-none select-none self-center rounded-full shadow-lg"
 		/>
 		<div
 			class="relative min-h-[calc(2rem+theme(spacing[3.5])*2)] min-w-[60px] break-words rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 px-5 py-3.5 text-gray-600 prose-pre:my-2 dark:border-gray-800 dark:from-gray-800/40 dark:text-gray-300"
@@ -177,7 +177,11 @@
 {/if}
 {#if message.from === "user"}
 	<div class="group relative flex items-start justify-start gap-4 max-sm:text-sm">
-		<div class="mt-5 h-3 w-3 flex-none rounded-full" />
+		<img
+			alt=""
+			src="/user/avatar"
+			class="h-8 w-8 flex-none select-none self-center rounded-full shadow-lg"
+		/>
 		<div
 			class="max-w-full whitespace-break-spaces break-words rounded-2xl px-5 py-3.5 text-gray-500 dark:text-gray-400"
 		>
