@@ -1,6 +1,6 @@
 import { authCondition } from "$lib/server/auth";
 import { collections } from "$lib/server/database";
-import { defaultModel } from "$lib/server/models";
+import { defaultModel, turboModel } from "$lib/server/models";
 import { queryModelNoStreaming } from "$lib/server/queryModel.js";
 import type { Message } from "$lib/types/Message.js";
 import { error } from "@sveltejs/kit";
@@ -25,7 +25,7 @@ export async function POST({ params, locals, fetch }) {
 		firstMessage?.content;
 
 	const [generated_text, status, statusText] = await queryModelNoStreaming(
-		defaultModel,
+		turboModel ?? defaultModel,
 		[{ from: "user", content: userPrompt } as Message],
 		fetch
 	);
@@ -46,8 +46,8 @@ export async function POST({ params, locals, fetch }) {
 		JSON.stringify(
 			generated_text
 				? {
-						title: generated_text,
-				  }
+					title: generated_text,
+				}
 				: {}
 		),
 		{

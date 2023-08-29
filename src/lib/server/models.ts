@@ -105,6 +105,7 @@ export type BackendModel = typeof models[0];
 export type BackendModelHuggingFace = Extract<BackendModel, { type: "huggingface" }>;
 
 export const defaultModel = models[0];
+export const turboModel = models.find((m) => m.name === "OpenAI/gpt-3.5-turbo");
 
 export const validateModel = (_models: BackendModel[]) => {
 	// Zod enum function requires 2 parameters
