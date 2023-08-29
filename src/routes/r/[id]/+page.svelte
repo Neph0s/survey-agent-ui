@@ -59,7 +59,6 @@
 	{loading}
 	shared={true}
 	messages={data.messages}
-	searches={data.searches}
 	on:message={(ev) =>
 		createConversation()
 			.then((convId) => {

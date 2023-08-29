@@ -12,21 +12,17 @@
 	import { ERROR_MESSAGES, error } from "$lib/stores/errors";
 	import { randomUUID } from "$lib/utils/randomUuid";
 	import { findCurrentModel } from "$lib/utils/models";
-	import { webSearchParameters } from "$lib/stores/webSearchParameters";
-	import type { WebSearchMessage } from "$lib/types/WebSearch";
 	import type { Message } from "$lib/types/Message";
 	import { browser } from "$app/environment";
 	import { streamToAsyncIterable } from "$lib/utils/streamToAsyncIterable.js";
 	import { pipe, filter, map, flatMap } from "iter-ops";
-	import type { TextGenerationStreamOutput } from "@huggingface/inference";
+	import { parseStreamOutput } from "$lib/utils/parseStreamOutput.js";
 
 	export let data;
 
 	let messages = data.messages;
 	let lastLoadedMessages = data.messages;
 	let isAborted = false;
-
-	let webSearchMessages: WebSearchMessage[] = [];
 
 	// Since we modify the messages array locally, we don't want to reset it if an old version is passed
 	$: if (data.messages !== lastLoadedMessages) {
@@ -37,32 +33,10 @@
 	let loading = false;
 	let pending = false;
 
-	async function getTextGenerationStream(
-		inputs: string,
-		messageId: string,
-		isRetry = false,
-		webSearchId?: string
-	) {
+	async function getTextGenerationStream(inputs: string, messageId: string, isRetry = false) {
 		let conversationId = $page.params.id;
 		const responseId = randomUUID();
 
-		// const generator = textGenerationStream(
-		// 	{
-		// 		model: $page.url.href,
-		// 		inputs,
-		// 		parameters: {
-		// 			...data.models.find((m) => m.id === data.model)?.parameters,
-		// 			return_full_text: false,
-		// 		},
-		// 	},
-		// 	{
-		// 		id: messageId,
-		// 		response_id: responseId,
-		// 		is_retry: isRetry,
-		// 		use_cache: false,
-		// 		web_search_id: webSearchId,
-		// 	} as Options
-		// );
 		const response = await fetch($page.url.href, {
 			method: "POST",
 			headers: {
@@ -79,7 +53,6 @@
 					response_id: responseId,
 					is_retry: isRetry,
 					use_cache: false,
-					web_search_id: webSearchId,
 				},
 				stream: true,
 			}),
@@ -95,23 +68,33 @@
 			streamToAsyncIterable(response.body),
 			map((chunk) => new TextDecoder().decode(chunk)),
 			flatMap((chunk) => chunk.split("\n")),
-			map((chunk) => chunk.trim()),
-			filter((chunk) => chunk.startsWith("data:") || chunk.startsWith("error:"))
+			filter((chunk) => chunk.trim() !== ""),
+			map((chunk) => parseStreamOutput(chunk))
 		);
 
 		for await (const chunk of generator) {
-			if (chunk.startsWith("error:")) {
-				console.error(chunk.slice(6));
-				$error = chunk.slice(6);
+			if (chunk.type === "error") {
+				console.error(chunk.message);
+				$error = chunk.message;
 				break;
 			}
 
-			const output = JSON.parse(chunk.trim().slice(5)) as TextGenerationStreamOutput;
+			const lastMessage = messages[messages.length - 1];
+			if (lastMessage?.from !== "assistant") {
+				// First token has a space at the beginning, trim it
+				messages = [
+					...messages,
+					// id doesn't match the backend id but it's not important for assistant messages
+					{
+						from: "assistant",
+						content: "",
+						id: responseId,
+						actions: [],
+					},
+				];
+			}
+
 			pending = false;
-
-			if (!output) {
-				break;
-			}
 
 			if (conversationId !== $page.params.id) {
 				fetch(`${base}/conversation/${conversationId}/stop-generating`, {
@@ -128,31 +111,32 @@
 				break;
 			}
 
-			// final message
-			if (output.generated_text) {
-				const lastMessage = messages[messages.length - 1];
+			if (chunk.type === "text") {
+				const output = chunk.data;
 
-				if (lastMessage) {
+				// final message
+				if (output.generated_text) {
 					lastMessage.content = output.generated_text;
-					lastMessage.webSearchId = webSearchId;
 					messages = [...messages];
+					break;
 				}
-				break;
-			}
 
-			if (!output.token.special) {
-				const lastMessage = messages[messages.length - 1];
-
-				if (lastMessage?.from !== "assistant") {
-					// First token has a space at the beginning, trim it
-					messages = [
-						...messages,
-						// id doesn't match the backend id but it's not important for assistant messages
-						{ from: "assistant", content: output.token.text.trimStart(), id: responseId },
-					];
-				} else {
+				if (!output.token.special) {
 					lastMessage.content += output.token.text;
 					messages = [...messages];
+				}
+			} else if (chunk.type === "action") {
+				if (!lastMessage.actions) {
+					lastMessage.actions = [];
+				}
+				const action = lastMessage.actions.find((a) => a.name === chunk.name);
+				if (action) {
+					action.messages.push(chunk.message);
+				} else {
+					lastMessage.actions.push({
+						name: chunk.name,
+						messages: [chunk.message],
+					});
 				}
 			}
 		}
@@ -183,63 +167,8 @@
 				{ from: "user", content: message, id: messageId },
 			];
 
-			let searchResponseId: string | null = "";
-			if ($webSearchParameters.useSearch) {
-				webSearchMessages = [];
+			await getTextGenerationStream(message, messageId, isRetry);
 
-				const res = await fetch(
-					`${base}/conversation/${$page.params.id}/web-search?` +
-						new URLSearchParams({ prompt: message }),
-					{
-						method: "GET",
-					}
-				);
-
-				// required bc linting doesn't see TextDecoderStream for some reason?
-				// eslint-disable-next-line no-undef
-				const encoder = new TextDecoderStream();
-				const reader = res?.body?.pipeThrough(encoder).getReader();
-
-				while (searchResponseId === "") {
-					await new Promise((r) => setTimeout(r, 25));
-
-					if (isAborted) {
-						reader?.cancel();
-						return;
-					}
-
-					reader
-						?.read()
-						.then(async ({ done, value }) => {
-							if (done) {
-								reader.cancel();
-								return;
-							}
-
-							try {
-								webSearchMessages = (JSON.parse(value) as { messages: WebSearchMessage[] })
-									.messages;
-							} catch (parseError) {
-								// in case of parsing error we wait for the next message
-								return;
-							}
-
-							const lastSearchMessage = webSearchMessages[webSearchMessages.length - 1];
-							if (lastSearchMessage.type === "result") {
-								searchResponseId = lastSearchMessage.id;
-								reader.cancel();
-								return;
-							}
-						})
-						.catch(() => {
-							searchResponseId = null;
-						});
-				}
-			}
-
-			await getTextGenerationStream(message, messageId, isRetry, searchResponseId ?? undefined);
-
-			webSearchMessages = [];
 			if (browser) invalidate(UrlDependency.Conversation);
 
 			if (messages.filter((m) => m.from === "user").length === 1) {
@@ -314,8 +243,6 @@
 	{loading}
 	{pending}
 	{messages}
-	bind:webSearchMessages
-	searches={{ ...data.searches }}
 	on:message={(event) => writeMessage(event.detail)}
 	on:retry={(event) => writeMessage(event.detail.content, event.detail.id)}
 	on:vote={(event) => voteMessage(event.detail.score, event.detail.id)}

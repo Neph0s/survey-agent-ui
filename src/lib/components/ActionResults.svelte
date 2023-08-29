@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { WebSearchMessage } from "$lib/types/WebSearch";
+	import type { Action } from "$lib/types/Action";
 	import CarbonCaretRight from "~icons/carbon/caret-right";
 
 	import CarbonCheckmark from "~icons/carbon/checkmark-filled";
@@ -7,13 +7,13 @@
 
 	import EosIconsLoading from "~icons/eos-icons/loading";
 
-	export let loading = false;
 	export let classNames = "";
-	export let webSearchMessages: WebSearchMessage[] = [];
+	export let action: Action;
+	$: actionMessages = action.messages;
 
 	let detailsOpen: boolean;
-	let error: boolean;
-	$: error = webSearchMessages[webSearchMessages.length - 2]?.type === "error";
+	$: loading = actionMessages[actionMessages.length - 1]?.type === "update";
+	$: error = actionMessages[actionMessages.length - 1]?.type === "error";
 </script>
 
 <details
@@ -31,7 +31,7 @@
 			<CarbonCheckmark class="my-auto text-gray-500" />
 		{/if}
 		<span class="px-2 font-medium" class:text-red-700={error} class:dark:text-red-500={error}>
-			Web search
+			{action.name}
 		</span>
 		<div class="my-auto transition-all" class:rotate-90={detailsOpen}>
 			<CarbonCaretRight />
@@ -39,13 +39,13 @@
 	</summary>
 
 	<div class="content px-5 pb-5 pt-4">
-		{#if webSearchMessages.length === 0}
+		{#if actionMessages.length === 0}
 			<div class="mx-auto w-fit">
 				<EosIconsLoading class="mb-3 h-4 w-4" />
 			</div>
 		{:else}
 			<ol>
-				{#each webSearchMessages as message}
+				{#each actionMessages as message}
 					{#if message.type === "update"}
 						<li class="group border-l pb-6 last:!border-transparent last:pb-0 dark:border-gray-800">
 							<div class="flex items-start">
@@ -79,6 +79,17 @@
 									{message.args}
 								</p>
 							{/if}
+						</li>
+					{:else if message.type === "result"}
+						<li class="group border-l pb-6 last:!border-transparent last:pb-0 dark:border-gray-800">
+							<div class="flex items-start">
+								<CarbonCheckmark
+									class="-ml-1.5 h-3 w-3 flex-none scale-110 text-green-700 dark:text-green-500"
+								/>
+								<h3 class="text-md -mt-1.5 pl-2.5 text-black dark:text-white">
+									{message.message}
+								</h3>
+							</div>
 						</li>
 					{/if}
 				{/each}

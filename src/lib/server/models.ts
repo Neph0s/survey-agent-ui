@@ -56,11 +56,17 @@ const modelRawLangchainSpecific = z.object({
 	}),
 });
 
+const modelRawChatDocSpecific = z.object({
+	type: z.literal("chatdoc"),
+	parameters: z.object({}).optional().default({}),
+});
+
 const modelsRaw = z
 	.array(
 		z.discriminatedUnion("type", [
 			modelRawMixin.merge(modelRawLangchainSpecific),
 			modelRawMixin.merge(modelRawHuggingFaceSpecific),
+			modelRawMixin.merge(modelRawChatDocSpecific),
 		])
 	)
 	.parse(JSON.parse(MODELS));
@@ -77,21 +83,21 @@ export const models = await Promise.all(
 // Models that have been deprecated
 export const oldModels = OLD_MODELS
 	? z
-			.array(
-				z.object({
-					id: z.string().optional(),
-					name: z.string().min(1),
-					displayName: z.string().min(1).optional(),
-					type: z.enum(["huggingface", "langchain"]).default("huggingface"),
-				})
-			)
-			.parse(JSON.parse(OLD_MODELS))
-			.map((m) => ({
-				...m,
-				id: m.id || m.name,
-				displayName: m.displayName || m.name,
-				type: m.type,
-			}))
+		.array(
+			z.object({
+				id: z.string().optional(),
+				name: z.string().min(1),
+				displayName: z.string().min(1).optional(),
+				type: z.enum(["huggingface", "langchain"]).default("huggingface"),
+			})
+		)
+		.parse(JSON.parse(OLD_MODELS))
+		.map((m) => ({
+			...m,
+			id: m.id || m.name,
+			displayName: m.displayName || m.name,
+			type: m.type,
+		}))
 	: [];
 
 export type BackendModel = typeof models[0];

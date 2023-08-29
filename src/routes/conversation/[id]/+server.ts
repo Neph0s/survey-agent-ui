@@ -6,8 +6,10 @@ import { collections } from "$lib/server/database";
 import { models } from "$lib/server/models";
 import { queryModel } from "$lib/server/queryModel";
 import { ERROR_MESSAGES } from "$lib/stores/errors.js";
+import type { Action } from "$lib/types/Action";
 import type { Message } from "$lib/types/Message";
 import { concatUint8Arrays } from "$lib/utils/concatUint8Arrays";
+import { serializeStreamOutput } from "$lib/utils/parseStreamOutput.js";
 import { streamToAsyncIterable } from "$lib/utils/streamToAsyncIterable";
 import { trimPrefix } from "$lib/utils/trimPrefix";
 import { trimSuffix } from "$lib/utils/trimSuffix";
@@ -51,7 +53,7 @@ export async function POST({ request, fetch, locals, params }) {
 	const json = await request.json();
 	const {
 		inputs: newPrompt,
-		options: { id: messageId, is_retry, web_search_id, response_id: responseId },
+		options: { id: messageId, is_retry, response_id: responseId },
 	} = z
 		.object({
 			inputs: z.string().trim().min(1),
@@ -59,7 +61,6 @@ export async function POST({ request, fetch, locals, params }) {
 				id: z.optional(z.string().uuid()),
 				response_id: z.optional(z.string().uuid()),
 				is_retry: z.optional(z.boolean()),
-				web_search_id: z.ostring(),
 			}),
 		})
 		.parse(json);
@@ -88,10 +89,9 @@ export async function POST({ request, fetch, locals, params }) {
 		messages,
 		fetch,
 		abortController.signal,
-		web_search_id
 	);
 
-	async function saveMessage(generated_text: string) {
+	async function saveMessage(generated_text: string, actions: Action[]) {
 		if (model?.type === "huggingface") {
 			generated_text = trimSuffix(
 				trimPrefix(generated_text, "<|startoftext|>"),
@@ -108,8 +108,8 @@ export async function POST({ request, fetch, locals, params }) {
 		messages.push({
 			from: "assistant",
 			content: generated_text,
-			webSearchId: web_search_id,
 			id: (responseId as Message["id"]) || crypto.randomUUID(),
+			actions
 		});
 
 		await collections.messageEvents.insertOne({
@@ -133,23 +133,35 @@ export async function POST({ request, fetch, locals, params }) {
 	const stream = new ReadableStream({
 		async start(controller) {
 			const textChunks: string[] = [];
+			const actions: Action[] = [];
 			for await (const response of generator) {
-				textChunks.push(response.token.text);
 				const abortDate = abortedGenerations.get(convId.toString());
 				if (abortDate && abortDate > date) {
 					abortController.abort("Cancelled by user");
-					await saveMessage(textChunks.join(""));
+					await saveMessage(textChunks.join(""), actions);
 					controller.enqueue(new TextEncoder().encode("error: Cancelled by user\n"));
 					break;
 				}
-				if (response.generated_text) {
-					await saveMessage(response.generated_text);
+
+				if (response.type === "action") {
+					const action = actions.find((a) => a.name === response.name);
+					if (action) {
+						action.messages.push(response.message);
+					} else {
+						actions.push({
+							name: response.name,
+							messages: [response.message],
+						});
+					}
+				} else if (response.type === "text") {
+					textChunks.push(response.data.token.text);
+
+					if (response.data.generated_text) {
+						await saveMessage(response.data.generated_text, actions);
+					}
 				}
-				// Convert the response to Uint8Array
-				const output = "data:" + JSON.stringify(response) + "\n";
-				const data = new TextEncoder().encode(output);
-				// Push the data into the stream
-				controller.enqueue(data);
+
+				controller.enqueue(new TextEncoder().encode(serializeStreamOutput(response) + "\n"));
 			}
 			controller.close();
 		},

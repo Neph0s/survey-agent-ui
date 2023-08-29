@@ -13,9 +13,8 @@
 	import CarbonThumbsDown from "~icons/carbon/thumbs-down";
 	import { PUBLIC_SEP_TOKEN } from "$lib/constants/publicSepToken";
 	import type { Model } from "$lib/types/Model";
-	import type { WebSearchMessage } from "$lib/types/WebSearch";
 
-	import OpenWebSearchResults from "../OpenWebSearchResults.svelte";
+	import ActionResults from "../ActionResults.svelte";
 
 	function sanitizeMd(md: string) {
 		let ret = md
@@ -28,9 +27,12 @@
 			.replaceAll("<", "&lt;")
 			.trim();
 
-		for (const stop of [...(model.parameters?.stop ?? []), "<|endoftext|>"]) {
-			if (ret.endsWith(stop)) {
-				ret = ret.slice(0, -stop.length).trim();
+		if (model.type === "huggingface") {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			for (const stop of [...((model.parameters as any).stop ?? []), "<|endoftext|>"]) {
+				if (ret.endsWith(stop)) {
+					ret = ret.slice(0, -stop.length).trim();
+				}
 			}
 		}
 
@@ -47,7 +49,7 @@
 	export let readOnly = false;
 	export let isTapped = false;
 
-	export let webSearchMessages: WebSearchMessage[] = [];
+	$: actions = message.actions ?? [];
 
 	const dispatch = createEventDispatcher<{
 		retry: { content: string; id: Message["id"] };
@@ -94,12 +96,6 @@
 
 	$: downloadLink =
 		message.from === "user" ? `${$page.url.pathname}/message/${message.id}/prompt` : undefined;
-
-	let webSearchIsDone = true;
-
-	$: webSearchIsDone =
-		webSearchMessages.length > 0 &&
-		webSearchMessages[webSearchMessages.length - 1].type === "result";
 </script>
 
 {#if message.from === "assistant"}
@@ -116,14 +112,10 @@
 		<div
 			class="relative min-h-[calc(2rem+theme(spacing[3.5])*2)] min-w-[60px] break-words rounded-2xl border border-gray-100 bg-gradient-to-br from-gray-50 px-5 py-3.5 text-gray-600 prose-pre:my-2 dark:border-gray-800 dark:from-gray-800/40 dark:text-gray-300"
 		>
-			{#if webSearchMessages && webSearchMessages.length > 0}
-				<OpenWebSearchResults
-					classNames={tokens.length ? "mb-3.5" : ""}
-					{webSearchMessages}
-					loading={!webSearchIsDone}
-				/>
-			{/if}
-			{#if !message.content && (webSearchIsDone || (webSearchMessages && webSearchMessages.length === 0))}
+			{#each actions as action}
+				<ActionResults classNames={tokens.length ? "mb-3.5" : ""} {action} />
+			{/each}
+			{#if !message.content}
 				<IconLoading />
 			{/if}
 

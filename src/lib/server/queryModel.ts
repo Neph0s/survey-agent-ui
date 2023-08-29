@@ -4,8 +4,9 @@ import { streamToAsyncIterable } from "$lib/utils/streamToAsyncIterable";
 import { filter, flatMap, map, pipe } from "iter-ops";
 import { modelEndpoint } from "./modelEndpoint";
 import type { BackendModel, BackendModelHuggingFace } from "./models";
-import type { TextGenerationStreamOutput } from "@huggingface/inference";
 import { match } from "ts-pattern";
+import { parseStreamOutput } from "$lib/utils/parseStreamOutput";
+import type { StreamOutput } from "$lib/types/StreamOutput";
 
 /**
  * Query a random model endpoint with given messages. Can be aborted with signal.
@@ -17,12 +18,11 @@ export async function queryModel(
 	messages: Message[],
 	fetch = window.fetch,
 	signal?: AbortSignal,
-	webSearchId?: string
 ) {
 	const randomEndpoint = modelEndpoint(model);
 
 	const fetchHuggingface = async (modelHuggingface: BackendModelHuggingFace) => {
-		const prompt = await buildPrompt(messages, modelHuggingface, webSearchId);
+		const prompt = await buildPrompt(messages, modelHuggingface);
 		const body = {
 			inputs: prompt,
 			stream: true,
@@ -40,13 +40,16 @@ export async function queryModel(
 			body: JSON.stringify(body),
 			signal,
 		});
-		const postProcess = (output: TextGenerationStreamOutput) => {
-			if (output.generated_text) {
+		const postProcess = (output: StreamOutput) => {
+			if (output.type === 'text' && output.data.generated_text) {
 				return {
 					...output,
-					generated_text: output.generated_text.startsWith(prompt)
-						? output.generated_text.slice(prompt.length)
-						: output.generated_text,
+					data: {
+						...output.data,
+						generated_text: output.data.generated_text.startsWith(prompt)
+							? output.data.generated_text.slice(prompt.length)
+							: output.data.generated_text,
+					}
 				};
 			}
 			return output;
@@ -73,12 +76,32 @@ export async function queryModel(
 			body: JSON.stringify(body),
 			signal,
 		});
-		return [resp, (output: TextGenerationStreamOutput) => output] as const;
+		return [resp, (output: StreamOutput) => output] as const;
+	};
+
+	const fetchChatDoc = async () => {
+		const body = {
+			messages: [...messages].map((m) => ({
+				type: m.from,
+				content: m.content,
+			})),
+			stream: true,
+		};
+		const resp = await fetch(randomEndpoint.url, {
+			headers: {
+				"Content-Type": "application/json",
+			},
+			method: "POST",
+			body: JSON.stringify(body),
+			signal,
+		});
+		return [resp, (output: StreamOutput) => output] as const;
 	};
 
 	const [resp, postProcess] = await match(model)
 		.with({ type: "huggingface" }, fetchHuggingface)
 		.with({ type: "langchain" }, fetchLangchain)
+		.with({ type: "chatdoc" }, fetchChatDoc)
 		.exhaustive();
 
 	if (!resp.body) {
@@ -90,8 +113,8 @@ export async function queryModel(
 			streamToAsyncIterable(resp.body),
 			map((chunk) => new TextDecoder().decode(chunk)),
 			flatMap((chunk) => chunk.split("\n")),
-			filter((chunk) => chunk.trim().startsWith("data:")),
-			map<string, TextGenerationStreamOutput>((chunk) => JSON.parse(chunk.trim().slice(5))),
+			filter((chunk) => chunk.trim() !== ""),
+			map((chunk) => parseStreamOutput(chunk)),
 			map(postProcess)
 		),
 		resp.status,
@@ -104,18 +127,16 @@ export async function queryModelNoStreaming(
 	messages: Message[],
 	fetch = window.fetch,
 	signal?: AbortSignal,
-	webSearchId?: string
 ) {
 	const [stream, status, statusText] = await queryModel(
 		model,
 		messages,
 		fetch,
 		signal,
-		webSearchId
 	);
 	for await (const output of stream) {
-		if (output.generated_text) {
-			return [output.generated_text, status, statusText] as const;
+		if (output.type === "text" && output.data.generated_text) {
+			return [output.data.generated_text, status, statusText] as const;
 		}
 	}
 	throw new Error("No generated text");

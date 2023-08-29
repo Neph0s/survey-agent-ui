@@ -50,6 +50,28 @@ export async function POST({ request }) {
 
 	const retStream = new ReadableStream({
 		async start(controller) {
+			controller.enqueue(
+				new TextEncoder().encode(
+					"action:" + JSON.stringify({
+						name: "Retrieval",
+						message: {
+							type: "update",
+							message: "Begin retrieving with query: " + chatMessages[chatMessages.length - 1].content,
+						}
+					}) + "\n"
+				)
+			);
+			controller.enqueue(
+				new TextEncoder().encode(
+					"action:" + JSON.stringify({
+						name: "Retrieval",
+						message: {
+							type: "result",
+							message: "Lorum ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur Excepteur sint occaecat cupidatat non proident sunt in culpa qui officia deserunt mollit anim id est laborum"
+						}
+					}) + "\n"
+				)
+			);
 			const response = await model.call(chatMessages, {
 				callbacks: [
 					{
