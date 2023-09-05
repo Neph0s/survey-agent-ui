@@ -1,5 +1,5 @@
 import { z } from "zod";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { collections } from "$lib/server/database";
 import { ObjectId } from "mongodb";
 import type { User } from "$lib/types/User.js";

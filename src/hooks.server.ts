@@ -10,7 +10,7 @@ import { collections } from "$lib/server/database";
 import { base } from "$app/paths";
 import { refreshSessionCookie, requiresUser } from "$lib/server/auth";
 import { ERROR_MESSAGES } from "$lib/stores/errors";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { z } from "zod";
 
 export const handle: Handle = async ({ event, resolve }) => {
