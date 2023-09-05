@@ -9,11 +9,11 @@ import type { MessageEvent } from "$lib/types/MessageEvent";
 
 const {MONGODB_URL, MONGODB_DB_NAME, MONGODB_DIRECT_CONNECTION} = env;
 
-if (!MONGODB_URL) {
-	throw new Error(
-		"Please specify the MONGODB_URL environment variable inside .env.local. Set it to mongodb://localhost:27017 if you are running MongoDB locally, or to a MongoDB Atlas free instance for example."
-	);
-}
+// if (!MONGODB_URL) {
+// 	throw new Error(
+// 		"Please specify the MONGODB_URL environment variable inside .env.local. Set it to mongodb://localhost:27017 if you are running MongoDB locally, or to a MongoDB Atlas free instance for example."
+// 	);
+// }
 
 const client = new MongoClient(MONGODB_URL, {
 	directConnection: MONGODB_DIRECT_CONNECTION === "true",
