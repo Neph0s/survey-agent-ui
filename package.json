@@ -10,8 +10,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "eslint --fix .",
-		"format": "prettier --plugin-search-dir . --write .",
-		"test": "MONGODB_URL=mongodb://127.0.0.1:27017/ vitest"
+		"format": "prettier --plugin-search-dir . --write ."
 	},
 	"devDependencies": {
 		"@iconify-json/carbon": "^1.1.16",

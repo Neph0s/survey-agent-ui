@@ -9,8 +9,9 @@ COPY --link --chown=1000 pnpm-lock.yaml package.json ./
 RUN npm install -g pnpm
 RUN pnpm install --frozen-lockfile --prefer-frozen-lockfile
 
-RUN --mount=type=secret,id=DOTENV_LOCAL,dst=.env.local \
-    pnpm build
+COPY --link --chown=1000 . .
+
+RUN pnpm build
 
 FROM node:19-slim
 

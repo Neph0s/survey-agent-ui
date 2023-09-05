@@ -1,5 +1,7 @@
-import { HF_ACCESS_TOKEN, MODELS, OLD_MODELS } from "$env/static/private";
+import { env } from "$env/dynamic/private";
 import { z } from "zod";
+
+const { MODELS, OLD_MODELS, HF_ACCESS_TOKEN } = env;
 
 const modelRawMixin = z.object({
 	/** Used as an identifier in DB */

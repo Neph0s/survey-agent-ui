@@ -1,6 +1,8 @@
-import { HF_ACCESS_TOKEN } from "$env/static/private";
+import { env } from "$env/dynamic/private";
 import { sum } from "$lib/utils/sum";
 import type { BackendModel } from "./models";
+
+const { HF_ACCESS_TOKEN } = env;
 
 /**
  * Find a random load-balanced endpoint

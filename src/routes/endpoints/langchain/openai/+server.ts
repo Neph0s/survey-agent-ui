@@ -3,7 +3,9 @@ import { z } from "zod";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { HumanMessage, AIMessage, SystemMessage } from "langchain/schema";
 import type { TextGenerationStreamOutput } from "@huggingface/inference";
-import { OPENAI_API_KEY } from "$env/static/private";
+import { env } from "$env/dynamic/private";
+
+const { OPENAI_API_KEY } = env;
 
 export async function POST({ request }) {
 	const json = await request.json();
