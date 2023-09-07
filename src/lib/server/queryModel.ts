@@ -5,7 +5,7 @@ import { filter, flatMap, map, pipe } from "iter-ops";
 import { modelEndpoint } from "./modelEndpoint";
 import type { BackendModel, BackendModelHuggingFace } from "./models";
 import { match } from "ts-pattern";
-import { parseStreamOutput } from "$lib/utils/parseStreamOutput";
+import { canParseStreamOutput, parseStreamOutput } from "$lib/utils/parseStreamOutput";
 import type { StreamOutput } from "$lib/types/StreamOutput";
 
 /**
@@ -113,6 +113,19 @@ export async function queryModel(
 			streamToAsyncIterable(resp.body),
 			map((chunk) => new TextDecoder().decode(chunk)),
 			flatMap((chunk) => chunk.split("\n")),
+			filter((chunk) => chunk.trim() !== ""),
+			map((chunk, index, state) => {
+				if (!state['pastOutput']) state['pastOutput'] = ''
+				if (canParseStreamOutput(state['pastOutput'] + chunk)) {
+					const output = state['pastOutput'] + chunk
+					state['pastOutput'] = ''
+					return output
+				} else {
+					state['pastOutput'] += chunk
+					state['pastOutput'] = state['pastOutput'].trim()
+					return ''
+				}
+			}),
 			filter((chunk) => chunk.trim() !== ""),
 			map((chunk) => parseStreamOutput(chunk)),
 			map(postProcess)
