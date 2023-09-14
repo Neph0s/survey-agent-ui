@@ -85,7 +85,7 @@ export async function queryModel(
 				type: m.from,
 				content: m.content,
 			})),
-			stream: true,
+			stream: false,
 		};
 		const resp = await fetch(randomEndpoint.url, {
 			headers: {
