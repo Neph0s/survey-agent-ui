@@ -7,6 +7,10 @@ import type { BackendModel, BackendModelHuggingFace } from "./models";
 import { match } from "ts-pattern";
 import { canParseStreamOutput, parseStreamOutput } from "$lib/utils/parseStreamOutput";
 import type { StreamOutput } from "$lib/types/StreamOutput";
+import { env } from "$env/dynamic/private";
+
+const { MODEL_STREAMING } = env
+const streaming = MODEL_STREAMING === 'true'
 
 /**
  * Query a random model endpoint with given messages. Can be aborted with signal.
@@ -25,7 +29,7 @@ export async function queryModel(
 		const prompt = await buildPrompt(messages, modelHuggingface);
 		const body = {
 			inputs: prompt,
-			stream: true,
+			stream: streaming,
 			parameters: {
 				...modelHuggingface.parameters,
 				return_full_text: false,
@@ -64,7 +68,7 @@ export async function queryModel(
 		};
 		const body = {
 			messages: [systemMessages, ...messages],
-			stream: true,
+			stream: streaming,
 			parameters: model.parameters,
 		};
 		const resp = await fetch(randomEndpoint.url, {
@@ -85,7 +89,7 @@ export async function queryModel(
 				type: m.from,
 				content: m.content,
 			})),
-			stream: false,
+			stream: streaming,
 		};
 		const resp = await fetch(randomEndpoint.url, {
 			headers: {
