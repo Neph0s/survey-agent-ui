@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { marked } from "marked";
 	import type { Message } from "$lib/types/Message";
-	import { afterUpdate, createEventDispatcher } from "svelte";
+	import { afterUpdate, createEventDispatcher, onDestroy } from "svelte";
 	import { deepestChild } from "$lib/utils/deepestChild";
 	import { page } from "$app/stores";
 
@@ -15,6 +15,8 @@
 	import type { Model } from "$lib/types/Model";
 
 	import ActionResults from "../ActionResults.svelte";
+	import IconCopy from "../icons/IconCopy.svelte";
+	import Tooltip from "../Tooltip.svelte";
 
 	function sanitizeMd(md: string) {
 		let ret = md
@@ -38,8 +40,21 @@
 
 		return ret;
 	}
+
 	function unsanitizeMd(md: string) {
 		return md.replaceAll("&lt;", "<");
+	}
+
+	function getCopiableText(tokens: marked.TokensList) {
+		let copiableText = "";
+		for (const token of tokens) {
+			if ("text" in token) {
+				copiableText += unsanitizeMd(token.text) + "\n";
+			} else if (token.type === "hr") {
+				break;
+			}
+		}
+		return copiableText.trim();
 	}
 
 	export let model: Model;
@@ -76,6 +91,33 @@
 	};
 
 	$: tokens = marked.lexer(sanitizeMd(message.content));
+	$: copiableText = getCopiableText(tokens);
+
+	let isCopySuccess = false;
+	let copyTimeout: ReturnType<typeof setTimeout>;
+
+	const handleCopy = async () => {
+		// writeText() can be unavailable or fail in some cases (iframe, etc) so we try/catch
+		try {
+			await navigator.clipboard.writeText(copiableText);
+
+			isCopySuccess = true;
+			if (copyTimeout) {
+				clearTimeout(copyTimeout);
+			}
+			copyTimeout = setTimeout(() => {
+				isCopySuccess = false;
+			}, 1000);
+		} catch (err) {
+			console.error(err);
+		}
+	};
+
+	onDestroy(() => {
+		if (copyTimeout) {
+			clearTimeout(copyTimeout);
+		}
+	});
 
 	afterUpdate(() => {
 		loadingEl?.$destroy();
@@ -141,7 +183,19 @@
 				"
 			>
 				<button
-					class="btn rounded-sm p-1 text-sm text-gray-400 focus:ring-0 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300
+					class="btn rounded-sm p-1 text-sm text-gray-400 hover:text-gray-500 focus:ring-0 dark:text-gray-400 dark:hover:text-gray-300"
+					title="复制回答"
+					type="button"
+					on:click={handleCopy}
+				>
+					<span class="relative">
+						<IconCopy classNames="h-[1.14em] w-[1.14em]" />
+						<Tooltip classNames={isCopySuccess ? "opacity-100" : "opacity-0"} />
+					</span>
+				</button>
+				<span class="mx-1 border-r border-gray-300 dark:border-gray-600" />
+				<button
+					class="btn rounded-sm p-1 text-sm text-gray-400 hover:text-gray-500 focus:ring-0 dark:text-gray-400 dark:hover:text-gray-300
 					{message.score && message.score > 0
 						? 'text-green-500 hover:text-green-500 dark:text-green-400 hover:dark:text-green-400'
 						: ''}"
@@ -152,7 +206,7 @@
 					<CarbonThumbsUp class="h-[1.14em] w-[1.14em]" />
 				</button>
 				<button
-					class="btn rounded-sm p-1 text-sm text-gray-400 focus:ring-0 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300
+					class="btn rounded-sm p-1 text-sm text-gray-400 hover:text-gray-500 focus:ring-0 dark:text-gray-400 dark:hover:text-gray-300
 					{message.score && message.score < 0
 						? 'text-red-500 hover:text-red-500 dark:text-red-400 hover:dark:text-red-400'
 						: ''}"

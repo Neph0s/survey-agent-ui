@@ -1,12 +1,12 @@
 <script lang="ts">
 	export let classNames = "";
-	export let label = "Copied";
+	export let label = "复制成功";
 	export let position = "left-1/2 top-full transform -translate-x-1/2 translate-y-2";
 </script>
 
 <div
 	class="
-		pointer-events-none absolute rounded bg-black px-2 py-1 font-normal leading-tight text-white shadow transition-opacity 
+		pointer-events-none absolute rounded bg-black px-2 py-1 font-normal leading-tight text-white shadow transition-opacity
 		{position}
 		{classNames}
 	"
