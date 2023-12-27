@@ -26,7 +26,7 @@
 			.replaceAll(PUBLIC_SEP_TOKEN, " ")
 			.replaceAll(/<\|[a-z]+\|>/g, " ")
 			.replaceAll(/<br\s?\/?>/gi, "\n")
-			.replaceAll("<", "&lt;")
+			// .replaceAll("<", "&lt;")
 			.trim();
 
 		if (model.type === "huggingface") {
