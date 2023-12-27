@@ -22,6 +22,7 @@ export async function queryModel(
 	messages: Message[],
 	fetch = window.fetch,
 	signal?: AbortSignal,
+	conversationInfo?: { userId: string; conversationId: string },
 ) {
 	const randomEndpoint = modelEndpoint(model);
 
@@ -90,6 +91,7 @@ export async function queryModel(
 				content: m.content,
 			})),
 			stream: streaming,
+			conversationInfo
 		};
 		const resp = await fetch(randomEndpoint.url, {
 			headers: {

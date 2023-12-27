@@ -89,6 +89,7 @@ export async function POST({ request, fetch, locals, params }) {
 		messages,
 		fetch,
 		abortController.signal,
+		{ userId: userId.toString(), conversationId: convId.toString() }
 	);
 
 	async function saveMessage(generated_text: string, actions: Action[]) {
